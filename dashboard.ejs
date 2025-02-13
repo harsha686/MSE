@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <h1>Welcome, Candidate!</h1>
+  <a href="/logout">Logout</a>
+  
+  <h2>Your Applications</h2>
+  <div class="applications">
+    <% applications.forEach(application => { %>
+      <div class="application">
+        <p>Job ID: <%= application.job_id %></p>
+        <p>Status: <%= application.status %></p>
+      </div>
+    <% }); %>
+  </div>
+</body>
+</html>
