@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Job Applicants</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="dashboard">
+    <a href="/recruiter-dashboard" class="button">Back to Dashboard</a>
+    <h1>Applicants for Job</h1>
+    <div class="applicant-list">
+      <% applicants.forEach(applicant => { %>
+        <div class="applicant card">
+          <h3><%= applicant.candidate_name %></h3>
+          <p>Email: <%= applicant.candidate_email %></p>
+          <p>Status: <span class="status <%= applicant.status %>">
+            <%= applicant.status %>
+          </span></p>
+          
+          <form action="/update-status/<%= applicant.id %>" method="POST">
+            <select name="status" onchange="this.form.submit()">
+              <option value="applied" <%= applicant.status === 'applied' ? 'selected' : '' %>>Applied</option>
+              <option value="shortlisted" <%= applicant.status === 'shortlisted' ? 'selected' : '' %>>Shortlisted</option>
+              <option value="rejected" <%= applicant.status === 'rejected' ? 'selected' : '' %>>Rejected</option>
+            </select>
+          </form>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</body>
+</html>

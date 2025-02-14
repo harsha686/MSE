@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Recruiter Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="dashboard">
+    <h1>Welcome, Recruiter!</h1>
+    <a href="/logout" class="button">Logout</a>
+
+    <!-- Post New Job Form -->
+    <div class="card mt-20">
+      <h2>Post New Job</h2>
+      <form action="/post-job" method="POST">
+        <input type="text" name="title" placeholder="Job Title" required>
+        <textarea name="description" placeholder="Job Description" rows="4" required></textarea>
+        <button type="submit">Post Job</button>
+      </form>
+    </div>
+
+    <!-- Posted Jobs -->
+    <h2 class="mt-20">Your Posted Jobs</h2>
+    <div class="job-list">
+      <% jobs.forEach(job => { %>
+        <div class="job">
+          <h3><%= job.title %></h3>
+          <p><%= job.description %></p>
+          <div class="job-stats">
+            <span class="applicants">
+              <%= job.application_count %> Applicants
+            </span>
+            <a href="/job-applicants/<%= job.id %>" class="button">View Applicants</a>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</body>
+</html>
