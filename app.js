@@ -35,6 +35,7 @@ db.serialize(() => {
 });
 
 // Routes (add below)
+
 app.get('/', (req, res) => {
   db.all('SELECT * FROM jobs', (err, jobs) => {
     if (err) throw err;
@@ -103,18 +104,41 @@ const requireLogin = (req, res, next) => {
   };
   app.get('/dashboard', requireLogin, (req, res) => {
     if (req.session.role === 'candidate') {
+      const searchQuery = req.query.q || ''; // Get search term from query string
+  
       // Fetch candidate's applications
       db.all(
         'SELECT * FROM applications WHERE candidate_id = ?',
         [req.session.userId],
         (err, applications) => {
           if (err) throw err;
-          res.render('dashboard', { applications });
+  
+          // Fetch jobs with search filter
+          db.all(
+            `SELECT 
+              jobs.*, 
+              EXISTS(
+                SELECT 1 FROM applications 
+                WHERE applications.job_id = jobs.id 
+                AND applications.candidate_id = ?
+              ) AS has_applied
+            FROM jobs
+            WHERE title LIKE ? OR description LIKE ?`,
+            [req.session.userId, `%${searchQuery}%`, `%${searchQuery}%`],
+            (err, jobs) => {
+              if (err) throw err;
+              res.render('dashboard', { 
+                applications,
+                jobs,
+                searchQuery, // Pass searchQuery to the template
+                session: req.session
+              });
+            }
+          );
         }
       );
     } else {
-      // Recruiter dashboard (add later)
-      res.send('Recruiter dashboard');
+      res.redirect('/recruiter-dashboard');
     }
   });
   app.post('/login', (req, res) => {
@@ -154,4 +178,172 @@ const requireLogin = (req, res, next) => {
         res.redirect('/dashboard');
       }
     );
+  }); 
+  // Recruiter Dashboard Route
+app.get('/recruiter-dashboard', requireLogin, (req, res) => {
+  if (req.session.role !== 'recruiter') {
+    return res.redirect('/dashboard');
+  }
+
+  // Fetch recruiter's posted jobs and applicant counts
+  db.all(`
+    SELECT 
+      jobs.*, 
+      COUNT(applications.id) AS application_count
+    FROM jobs
+    LEFT JOIN applications ON jobs.id = applications.job_id
+    WHERE jobs.recruiter_id = ?
+    GROUP BY jobs.id
+  `, [req.session.userId], (err, jobs) => {
+    if (err) throw err;
+    res.render('recruiter-dashboard', { jobs });
   });
+});
+
+// View Applicants for a Job
+// app.js
+app.get('/job-applicants/:jobId', requireLogin, (req, res) => {
+  const jobId = req.params.jobId;
+  
+  db.all(`
+    SELECT 
+      applications.*, 
+      users.name AS candidate_name,
+      users.email AS candidate_email
+    FROM applications 
+    JOIN users ON applications.candidate_id = users.id 
+    WHERE job_id = ?
+  `, [jobId], (err, applicants) => {
+    if (err) {
+      console.error("Error fetching applicants:", err); // Log errors
+      return res.send("Error loading applicants");
+    }
+    // Inside the /job-applicants route
+     console.log("Fetching applicants for job ID:", jobId);
+     console.log("Applicants data:", applicants);
+    res.render('job-applicants', { 
+      applicants,
+      session: req.session 
+    });
+  });
+});
+
+// Update Application Status
+app.post('/update-status/:appId', requireLogin, (req, res) => {
+  const { appId } = req.params;
+  const { status } = req.body;
+
+  db.run(
+    'UPDATE applications SET status = ? WHERE id = ?',
+    [status, appId],
+    (err) => {
+      if (err) throw err;
+      res.redirect('back'); // Go back to previous page
+    }
+  );
+});
+
+// Post New Job
+app.post('/post-job', requireLogin, (req, res) => {
+  const { title, description } = req.body;
+  
+  db.run(
+    'INSERT INTO jobs (title, description, recruiter_id) VALUES (?, ?, ?)',
+    [title, description, req.session.userId],
+    (err) => {
+      if (err) throw err;
+      res.redirect('/recruiter-dashboard');
+    }
+  );
+});
+app.get('/dashboard', requireLogin, (req, res) => {
+  if (req.session.role === 'candidate') {
+    const searchQuery = req.query.q || ''; // Get search term
+
+    // Fetch candidate's applications
+    db.all(
+      'SELECT * FROM applications WHERE candidate_id = ?',
+      [req.session.userId],
+      (err, applications) => {
+        if (err) throw err;
+
+        // Fetch jobs with search filter
+        db.all(
+          `SELECT 
+            jobs.*, 
+            EXISTS(
+              SELECT 1 FROM applications 
+              WHERE applications.job_id = jobs.id 
+              AND applications.candidate_id = ?
+            ) AS has_applied
+          FROM jobs
+          WHERE title LIKE ? OR description LIKE ?`,
+          [req.session.userId, `%${searchQuery}%`, `%${searchQuery}%`],
+          (err, jobs) => {
+            if (err) throw err;
+            res.render('dashboard', { 
+              applications,
+              jobs,
+              searchQuery, // Pass this to template
+              session: req.session
+            });
+          }
+        );
+      }
+    );
+  } else {
+    res.redirect('/recruiter-dashboard');
+  }
+});
+app.post('/apply/:jobId', requireLogin, (req, res) => {
+  if (req.session.role !== 'candidate') {
+    return res.status(403).send('Only candidates can apply');
+  }
+
+  const { jobId } = req.params;
+  db.run(
+    'INSERT INTO applications (candidate_id, job_id) VALUES (?, ?)',
+    [req.session.userId, jobId],
+    (err) => {
+      if (err) {
+        if (err.code === 'SQLITE_CONSTRAINT') {
+          return res.send('You already applied for this job');
+        }
+        throw err;
+      }
+      res.redirect('/dashboard');
+    }
+  );
+});
+//apply route
+app.post('/apply/:jobId', requireLogin, (req, res) => {
+  if (req.session.role !== 'candidate') {
+    return res.redirect('/login');
+  }
+
+  const jobId = req.params.jobId;
+  const candidateId = req.session.userId;
+
+  // Check if already applied
+  db.get(
+    'SELECT * FROM applications WHERE candidate_id = ? AND job_id = ?',
+    [candidateId, jobId],
+    (err, existingApplication) => {
+      if (err) throw err;
+
+      if (existingApplication) {
+        return res.send('You have already applied for this job.');
+      }
+
+      // Insert new application
+      db.run(
+        'INSERT INTO applications (candidate_id, job_id, status) VALUES (?, ?, ?)',
+        [candidateId, jobId, 'applied'],
+        (err) => {
+          if (err) throw err;
+          res.redirect('/dashboard');
+        }
+      );
+    }
+  );
+});
