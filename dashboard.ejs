@@ -5,17 +5,53 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h1>Welcome, Candidate!</h1>
-  <a href="/logout">Logout</a>
-  
-  <h2>Your Applications</h2>
-  <div class="applications">
-    <% applications.forEach(application => { %>
-      <div class="application">
-        <p>Job ID: <%= application.job_id %></p>
-        <p>Status: <%= application.status %></p>
-      </div>
-    <% }); %>
+  <div class="dashboard">
+    <h1>Welcome, Candidate!</h1>
+    <a href="/logout" class="button">Logout</a>
+
+    <!-- Search Box -->
+    <form class="search-form" action="/dashboard" method="GET">
+      <input 
+        type="text" 
+        name="q" 
+        placeholder="Search jobs..." 
+        value="<%= searchQuery %>" <!-- Use searchQuery here -->
+      >
+      <button type="submit">Search</button>
+    </form>
+
+    <!-- Available Jobs -->
+    <h2 class="mt-20">Available Jobs</h2>
+    <div class="job-list">
+      <% jobs.forEach(job => { %> <!-- Start loop here -->
+        <div class="job">
+          <h3><%= job.title %></h3>
+          <p><%= job.description %></p>
+          
+          <!-- Check if applied -->
+          <% if (!job.has_applied) { %>
+            <form action="/apply/<%= job.id %>" method="POST"> <!-- Use POST -->
+              <button type="submit" class="apply-button">Apply Now</button>
+            </form>
+          <% } else { %>
+            <span class="status applied">Already Applied</span>
+          <% } %>
+        </div>
+      <% }); %> <!-- End loop here -->
+    </div>
+
+    <!-- Your Applications -->
+    <h2 class="mt-20">Your Applications</h2>
+    <div class="applications">
+      <% applications.forEach(application => { %>
+        <div class="application">
+          <p>Job ID: <%= application.job_id %></p>
+          <p>Status: <span class="status <%= application.status %>">
+            <%= application.status %>
+          </span></p>
+        </div>
+      <% }); %>
+    </div>
   </div>
 </body>
 </html>
