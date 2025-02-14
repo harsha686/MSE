@@ -7,7 +7,7 @@
   }
   
   body {
-    background-color: #f5f7fa;
+    background-color:whitesmoke;
     line-height: 1.6;
     padding: 20px;
     max-width: 1200px;
@@ -15,8 +15,9 @@
   }
   
   h1, h2, h3 {
-    color: #2c3e50;
+    color: #000000;
     margin-bottom: 1rem;
+    text-align: center;
   }
   
   a {
@@ -38,12 +39,13 @@
   
   /* Forms */
   form {
-    background: white;
+    background: rgb(255, 255, 255);
     padding: 2rem;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     max-width: 500px;
     margin: 20px auto;
+    
   }
   
   input[type="text"],
@@ -53,20 +55,23 @@
     width: 100%;
     padding: 10px;
     margin: 8px 0 20px;
-    border: 1px solid #ddd;
+    border: 1px solid #000000;
     border-radius: 4px;
     font-size: 16px;
   }
   
   button {
-    background: #3498db;
+    background: #004cff;
     color: white;
     border: none;
     padding: 12px 25px;
-    border-radius: 4px;
+    border-radius: 30px;
     cursor: pointer;
     font-size: 16px;
     transition: background 0.3s;
+    align-items: center;
+    width: 430px;
+    height: 50px;
   }
   
   button:hover {
@@ -159,7 +164,7 @@
 
 .applicants {
   background: #3498db;
-  color: white;
+  color: rgb(255, 255, 255);
   padding: 5px 10px;
   border-radius: 4px;
   font-size: 0.9em;
@@ -192,4 +197,59 @@ textarea {
 
 .applicant h3 {
   margin: 0;
+}
+/* Search Form */
+.search-form {
+  margin: 20px 0;
+  display: flex;
+  gap: 10px;
+}
+
+.search-form input[type="text"] {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.search-form button {
+  padding: 10px 20px;
+  background: #3498db;
+  border: none;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Applied Status */
+.status.applied {
+  background: #95a5a6;
+  color: white;
+}
+/* Apply Button */
+.apply-button {
+  background: #2ecc71 !important;
+  margin-top: 10px;
+}
+
+.apply-button:hover {
+  background: #27ae60 !important;
+}
+
+/* Error/Success Messages */
+.alert {
+  padding: 10px;
+  border-radius: 4px;
+  margin: 20px 0;
+}
+
+.alert-success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.alert-error {
+  background: #f8d7da;
+  color: #721c24;
 }
