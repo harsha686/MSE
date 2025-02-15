@@ -3,6 +3,25 @@
 <head>
   <title>Job Applicants</title>
   <link rel="stylesheet" href="/style.css">
+  <script>
+    function toggleProfileDetails(applicantId) {
+      const details = document.getElementById(`profile-details-${applicantId}`);
+      if (details.style.display === 'none' || details.style.display === '') {
+        details.style.display = 'block';
+      } else {
+        details.style.display = 'none';
+      }
+    }
+
+    function toggleInterviewForm(applicantId) {
+      const form = document.getElementById(`interview-form-${applicantId}`);
+      if (form.style.display === 'none' || form.style.display === '') {
+        form.style.display = 'block';
+      } else {
+        form.style.display = 'none';
+      }
+    }
+  </script>
 </head>
 <body>
   <div class="dashboard">
@@ -12,18 +31,48 @@
       <% applicants.forEach(applicant => { %>
         <div class="applicant card">
           <h3><%= applicant.candidate_name %></h3>
-          <p>Email: <%= applicant.candidate_email %></p>
-          <p>Status: <span class="status <%= applicant.status %>">
-            <%= applicant.status %>
-          </span></p>
+          <p>Status: <span class="status <%= applicant.status %>"><%= applicant.status %></span></p>
           
-          <form action="/update-status/<%= applicant.id %>" method="POST">
+          <!-- Status Update Form -->
+          <form class="status-up" action="/update-status/<%= applicant.id %>" method="POST">
             <select name="status" onchange="this.form.submit()">
               <option value="applied" <%= applicant.status === 'applied' ? 'selected' : '' %>>Applied</option>
               <option value="shortlisted" <%= applicant.status === 'shortlisted' ? 'selected' : '' %>>Shortlisted</option>
               <option value="rejected" <%= applicant.status === 'rejected' ? 'selected' : '' %>>Rejected</option>
             </select>
           </form>
+
+          <!-- Details Button -->
+          <button type="button" onclick="toggleProfileDetails('<%= applicant.id %>')">Details</button>
+
+          <!-- Profile Details (Initially Hidden) -->
+          <div id="profile-details-<%= applicant.id %>" style="display: none;">
+            <% const profile = applicant.profile; %>
+            <div class="profile-summary">
+              <% if (profile) { %>
+                <p><strong>Skills:</strong> <%= profile.skills %></p>
+                <p><strong>Education:</strong> <%= profile.education %></p>
+                <% if (profile.resume_path) { %>
+                  <a href="<%= profile.resume_path %>" download>Download Resume</a>
+                <% } %>
+              <% } else { %>
+                <p>Candidate hasn't completed their profile yet.</p>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Schedule Interview Button and Form (Initially Hidden) -->
+          <% if (applicant.status === 'shortlisted') { %>
+            <button type="button" onclick="toggleInterviewForm('<%= applicant.id %>')">Schedule Interview</button>
+            <form id="interview-form-<%= applicant.id %>" action="/schedule-interview" method="POST" class="interview-form" style="display: none;">
+              <input type="hidden" name="application_id" value="<%= applicant.id %>">
+              <input type="date" name="interview_date" required>
+              <input type="time" name="interview_time" required>
+              <input type="text" name="location" placeholder="Location" required>
+              <textarea name="notes" placeholder="Additional notes"></textarea>
+              <button type="submit">Schedule Interview</button>
+            </form>
+          <% } %>
         </div>
       <% }); %>
     </div>
