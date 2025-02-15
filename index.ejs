@@ -11,7 +11,9 @@
       <div class="job">
         <h3><%= job.title %></h3>
         <p><%= job.description %></p>
-        <button style="width: 100px;"><a href="/apply/<%= job.id %>">Apply Now</a></button>
+        <form class="apply-id" action="/apply/<%= job.id %>" method="POST">
+          <button class="apply-home"  type="submit" class="apply-button">Apply</button>
+        </form>
       </div>
     <% }); %>
   </div>
