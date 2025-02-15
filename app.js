@@ -44,11 +44,34 @@ db.serialize(() => {
     FOREIGN KEY (candidate_id) REFERENCES users(id),
     FOREIGN KEY (job_id) REFERENCES jobs(id)
   )`);
+
+  //table for interviews
+  db.run(`CREATE TABLE IF NOT EXISTS interviews (
+    id INTEGER PRIMARY KEY,
+    application_id INTEGER UNIQUE,
+    interview_date TEXT NOT NULL,
+    interview_time TEXT NOT NULL,
+    location TEXT NOT NULL,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (application_id) REFERENCES applications(id)
+  )`);
+  //table for candidate profiles
+  db.run(`CREATE TABLE IF NOT EXISTS candidate_profiles (
+    user_id INTEGER PRIMARY KEY,
+    full_name TEXT,
+    skills TEXT,
+    education TEXT,
+    experience TEXT,
+    resume_path TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )`);
 });
 
 // Middleware to check login
 const requireLogin = (req, res, next) => {
   if (!req.session.userId) {
+    req.session.errorMessage = 'Please log in to apply for a job';
     req.session.returnTo = req.originalUrl;
     return res.redirect('/login');
   }
@@ -80,8 +103,9 @@ app.post('/register', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-  const error = req.query.error || '';
-  res.render('login', { error });
+  const errorMessage = req.session.errorMessage || ''; // Get error message from session
+  delete req.session.errorMessage; // Clear the error message from session
+  res.render('login', { error: errorMessage });
 });
 
 app.post('/login', (req, res) => {
@@ -129,7 +153,15 @@ app.get('/dashboard', requireLogin, (req, res) => {
           [req.session.userId, `%${searchQuery}%`, `%${searchQuery}%`],
           (err, jobs) => {
             if (err) throw err;
-            res.render('dashboard', { applications, jobs, searchQuery, session: req.session });
+
+            db.all(
+              'SELECT * FROM interviews WHERE application_id IN (SELECT id FROM applications WHERE candidate_id = ?)',
+              [req.session.userId],
+              (err, interviews) => {
+                if (err) throw err;
+                res.render('dashboard', { applications, jobs, searchQuery, interviews, session: req.session });
+              }
+            );
           }
         );
       }
@@ -137,6 +169,7 @@ app.get('/dashboard', requireLogin, (req, res) => {
   });
 });
 
+// Apply for a job
 app.post('/apply/:jobId', requireLogin, (req, res) => {
   if (req.session.role !== 'candidate') {
     return res.status(403).send('Only candidates can apply');
@@ -170,31 +203,60 @@ app.get('/recruiter-dashboard', requireLogin, (req, res) => {
     return res.redirect('/dashboard');
   }
 
-  db.all(
-    `SELECT jobs.*, COUNT(applications.id) AS application_count
-    FROM jobs LEFT JOIN applications ON jobs.id = applications.job_id
-    WHERE jobs.recruiter_id = ?
-    GROUP BY jobs.id`,
-    [req.session.userId],
-    (err, jobs) => {
-      if (err) throw err;
-      res.render('recruiter-dashboard', { jobs });
-    }
-  );
+  const searchQuery = req.query.q || '';
+  const recruiterId = req.session.userId;
+
+  db.serialize(() => {
+    db.all(
+      `SELECT jobs.*, COUNT(applications.id) AS application_count
+      FROM jobs 
+      LEFT JOIN applications ON jobs.id = applications.job_id
+      WHERE jobs.recruiter_id = ? AND (jobs.title LIKE ? OR jobs.description LIKE ?)
+      GROUP BY jobs.id`,
+      [recruiterId, `%${searchQuery}%`, `%${searchQuery}%`],
+      (err, jobs) => {
+        if (err) throw err;
+        res.render('recruiter-dashboard', { jobs, searchQuery });
+      }
+    );
+  });
 });
 
 app.get('/job-applicants/:jobId', requireLogin, (req, res) => {
   const jobId = req.params.jobId;
-  db.all(
-    `SELECT applications.*, users.name AS candidate_name, users.email AS candidate_email
-    FROM applications JOIN users ON applications.candidate_id = users.id
-    WHERE job_id = ?`,
-    [jobId],
-    (err, applicants) => {
-      if (err) throw err;
-      res.render('job-applicants', { applicants });
-    }
-  );
+  
+  db.all(`
+    SELECT 
+      applications.*, 
+      users.name AS candidate_name,
+      users.email AS candidate_email
+    FROM applications 
+    JOIN users ON applications.candidate_id = users.id 
+    WHERE job_id = ?
+  `, [jobId], (err, applicants) => {
+    if (err) throw err;
+
+    // Fetch profiles for all applicants
+    const applicantsWithProfiles = applicants.map(applicant => {
+      return new Promise((resolve, reject) => {
+        db.get(
+          'SELECT * FROM candidate_profiles WHERE user_id = ?',
+          [applicant.candidate_id],
+          (err, profile) => {
+            if (err) reject(err);
+            resolve({ ...applicant, profile });
+          }
+        );
+      });
+    });
+
+    Promise.all(applicantsWithProfiles)
+      .then(data => res.render('job-applicants', { applicants: data }))
+      .catch(err => {
+        console.error(err);
+        res.send('Error loading applicants');
+      });
+  });
 });
 
 app.post('/update-status/:appId', requireLogin, (req, res) => {
@@ -226,3 +288,75 @@ app.post('/post-job', requireLogin, (req, res) => {
 app.listen(3000, () => {
   console.log('Server running on http://localhost:3000');
 });
+
+// Interview routes
+app.post('/schedule-interview', requireLogin, (req, res) => {
+  const { application_id, interview_date, interview_time, location, notes } = req.body;
+
+  // Validate recruiter ownership
+  db.get(
+    `SELECT jobs.recruiter_id 
+     FROM applications
+     JOIN jobs ON applications.job_id = jobs.id
+     WHERE applications.id = ?`,
+    [application_id],
+    (err, row) => {
+      if (err || !row || row.recruiter_id !== req.session.userId) {
+        return res.status(403).send('Unauthorized');
+      }
+
+      // Insert interview details
+      db.run(
+        `INSERT INTO interviews 
+        (application_id, interview_date, interview_time, location, notes)
+        VALUES (?, ?, ?, ?, ?)`,
+        [application_id, interview_date, interview_time, location, notes],
+        (err) => {
+          if (err) return res.send('Error scheduling interview');
+          res.redirect('back');
+        }
+      );
+    }
+  );
+});
+
+// View/Edit Profile
+app.get('/profile', requireLogin, (req, res) => {
+  db.get(
+    'SELECT * FROM candidate_profiles WHERE user_id = ?',
+    [req.session.userId],
+    (err, profile) => {
+      res.render('profile', { profile });
+    }
+  );
+});
+
+// Save Profile
+const multer = require('multer');
+const upload = multer({ dest: 'public/resumes/' });
+
+app.post('/profile', 
+  requireLogin, 
+  upload.single('resume'), 
+  (req, res) => {
+    const { full_name, skills, education, experience } = req.body;
+    const resumePath = req.file ? `/resumes/${req.file.filename}` : null;
+
+    db.run(
+      `INSERT INTO candidate_profiles 
+      (user_id, full_name, skills, education, experience, resume_path)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        full_name = excluded.full_name,
+        skills = excluded.skills,
+        education = excluded.education,
+        experience = excluded.experience,
+        resume_path = excluded.resume_path`,
+      [req.session.userId, full_name, skills, education, experience, resumePath],
+      (err) => {
+        if (err) throw err;
+        res.redirect('/profile');
+      }
+    );
+  }
+);
