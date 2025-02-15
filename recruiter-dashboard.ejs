@@ -9,6 +9,16 @@
     <h1>Welcome, Recruiter!</h1>
     <a href="/logout" class="button">Logout</a>
 
+    <!-- Search Box -->
+    <form class="search-form" action="/recruiter-dashboard" method="GET">
+      <input 
+        type="text" 
+        name="q" 
+        placeholder="Search for skilled candidates..." 
+        value="<%= searchQuery %>" <!-- Use searchQuery here -->
+      <button type="submit">Search</button>
+    </form>
+
     <!-- Post New Job Form -->
     <div class="card mt-20">
       <h2>Post New Job</h2>
