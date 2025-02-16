@@ -5,9 +5,11 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <%- include('partials/navbar') %>
   <div class="dashboard">
-    <h1>Welcome, Candidate!</h1>
-    <a href="/logout" class="button">Logout</a>
+    <div class="dashboard-header">
+      <h1>Welcome, Candidate!</h1>
+    </div>
 
     <!-- Search Box -->
     <form class="search-form" action="/dashboard" method="GET">
@@ -16,7 +18,6 @@
         name="q" 
         placeholder="Search jobs..." 
         value="<%= searchQuery %>" <!-- Use searchQuery here -->
-      >
       <button type="submit">Search</button>
     </form>
 
@@ -41,17 +42,42 @@
     </div>
 
     <!-- Your Applications -->
+    <div id="applications" class="applications-section">
     <h2 class="mt-20">Your Applications</h2>
     <div class="applications">
       <% applications.forEach(application => { %>
         <div class="application">
           <p>Job ID: <%= application.job_id %></p>
-          <p>Status: <span class="status <%= application.status %>">
-            <%= application.status %>
-          </span></p>
+          <p>Status: <span class="status <%= application.status %>"><%= application.status %></span></p>
+          
+          <% if (application.status === 'shortlisted') { %>
+            <!-- Show Interview Details -->
+            <% const interview = interviews.find(interview => interview.application_id === application.id); %>
+            <% if (interview) { %>
+              <div class="interview-details">
+                <h4>Interview Scheduled</h4>
+                <p>Date: <%= interview.interview_date %></p>
+                <p>Time: <%= interview.interview_time %></p>
+                <p>Location: <%= interview.location %></p>
+                <% if (interview.notes) { %>
+                  <p>Notes: <%= interview.notes %></p>
+                <% } %>
+              </div>
+            <% } %>
+          <% } %>
         </div>
       <% }); %>
+    </div>
     </div>
   </div>
 </body>
 </html>
+<script>
+  // Auto-scroll to applications if URL has hash
+  window.addEventListener('DOMContentLoaded', () => {
+    if (window.location.hash === '#applications') {
+      const section = document.getElementById('applications');
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+  </script>
