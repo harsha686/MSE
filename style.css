@@ -418,3 +418,12 @@ p {
     font-size: 0.9rem;
   }
 }
+/* Highlight applications section when targeted */
+#applications:target {
+  animation: highlight 1.5s ease-out;
+}
+
+@keyframes highlight {
+  from { background: rgba(52, 152, 219, 0.2); }
+  to { background: transparent; }
+}
