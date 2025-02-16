@@ -5,6 +5,7 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <%- include('partials/navbar') %>
   <h1>Register</h1>
   <form action="/register" method="POST">
     <input type="text" name="name" placeholder="Name" required><br>
@@ -19,6 +20,5 @@
     <br>
     <p style="text-align: center;">Already have an account? <a href="/login">Login here</a></p>
   </form>
-  
 </body>
 </html>
