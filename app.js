@@ -18,6 +18,7 @@ app.use(session({
   cookie: { secure: false }
 }));
 
+
 // Initialize tables
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS users (
@@ -82,12 +83,12 @@ const requireLogin = (req, res, next) => {
 app.get('/', (req, res) => {
   db.all('SELECT * FROM jobs', (err, jobs) => {
     if (err) throw err;
-    res.render('index', { jobs });
+    res.render('index', { jobs , session: req.session});
   });
 });
 
 app.get('/register', (req, res) => {
-  res.render('register');
+  res.render('register',{session: req.session});
 });
 
 app.post('/register', (req, res) => {
@@ -105,7 +106,7 @@ app.post('/register', (req, res) => {
 app.get('/login', (req, res) => {
   const errorMessage = req.session.errorMessage || ''; // Get error message from session
   delete req.session.errorMessage; // Clear the error message from session
-  res.render('login', { error: errorMessage });
+  res.render('login', { error: errorMessage ,session: req.session});
 });
 
 app.post('/login', (req, res) => {
@@ -130,6 +131,7 @@ app.get('/logout', (req, res) => {
   res.redirect('/login');
 });
 
+// Dashboard routes
 app.get('/dashboard', requireLogin, (req, res) => {
   if (req.session.role === 'recruiter') {
     return res.redirect('/recruiter-dashboard');
@@ -216,7 +218,7 @@ app.get('/recruiter-dashboard', requireLogin, (req, res) => {
       [recruiterId, `%${searchQuery}%`, `%${searchQuery}%`],
       (err, jobs) => {
         if (err) throw err;
-        res.render('recruiter-dashboard', { jobs, searchQuery });
+        res.render('recruiter-dashboard', { jobs, searchQuery, session: req.session });
       }
     );
   });
@@ -251,7 +253,7 @@ app.get('/job-applicants/:jobId', requireLogin, (req, res) => {
     });
 
     Promise.all(applicantsWithProfiles)
-      .then(data => res.render('job-applicants', { applicants: data }))
+      .then(data => res.render('job-applicants', { applicants: data,session: req.session }))
       .catch(err => {
         console.error(err);
         res.send('Error loading applicants');
@@ -326,7 +328,7 @@ app.get('/profile', requireLogin, (req, res) => {
     'SELECT * FROM candidate_profiles WHERE user_id = ?',
     [req.session.userId],
     (err, profile) => {
-      res.render('profile', { profile });
+      res.render('profile', { profile ,session: req.session});
     }
   );
 });
