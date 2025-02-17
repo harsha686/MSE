@@ -1,0 +1,32 @@
+<!-- views/partials/navbar.ejs -->
+<nav class="navbar">
+    <div class="navbar-brand">
+      <a href="/" class="logo">JobPortal</a>
+    </div>
+    
+    <ul class="nav-links">
+      <% if (!session.userId) { %>
+        <!-- Unauthenticated Users -->
+        <li><a href="/">Home</a></li>
+        <li><a href="/login">Login</a></li>
+        <li><a href="/register">Register</a></li>
+  
+      <% } else if (session.role === 'candidate') { %>
+        <!-- Candidate Navigation -->
+        <li><a href="/dashboard">Home</a></li>
+        <a href="/profile" class="button">Edit Profile</a>
+        <li><a href="/profile">Profile</a></li>
+        <li><a href="/dashboard#applications">Your Applications</a></li>
+        <li><a href="/dashboard">Dashboard</a></li>
+        <li><a href="/logout" class="logout-btn">Logout</a></li>
+  
+      <% } else if (session.role === 'recruiter') { %>
+        <!-- Recruiter Navigation -->
+        <li><a href="/recruiter-dashboard">Home</a></li>
+        <li><a href="/recruiter-dashboard#shortlisted">Shortlisted</a></li>
+        <li><a href="/recruiter-dashboard#rejected">Rejected</a></li>
+        <li><a href="/recruiter-dashboard">Applied Candidates</a></li>
+        <li><a href="/logout" class="logout-btn">Logout</a></li>
+      <% } %>
+    </ul>
+  </nav>
