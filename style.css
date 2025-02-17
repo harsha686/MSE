@@ -71,10 +71,13 @@ button {
   height: 50px;
   box-shadow: 0 10px 20px rgb(0 0 0 / 30%);
   font-weight: bold;
+  margin-bottom: 10px;
+  margin-right: 10px;
 }
 
 button:hover {
   background: #2c67e6;
+  transform: translateY(-1px);
 }
 
 /* Job Listings */
@@ -89,11 +92,11 @@ button:hover {
   padding: 20px;
   border-radius: 8px;
   box-shadow: 7px 6px 10px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
+  transition: transform 0.8s;
 }
 
 .job:hover {
-  transform: translateY(-2px);
+  transform: translateY(-10px);
 }
 
 .job h3 {
@@ -188,9 +191,9 @@ textarea {
 }
 
 .applicant {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  /* display: flex; */
+  /* justify-content: space-between;
+  align-items: center; */
   margin: 10px 0;
   padding: 15px;
 }
@@ -237,7 +240,7 @@ textarea {
 }
 
 .apply-button:hover {
-  background: #101e3f !important;
+  background: #1b2a4d !important;
 }
 
 /* Error/Success Messages */
@@ -275,7 +278,7 @@ textarea {
   color: white;
   width: 100px;
   height: 50px;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  /* box-shadow: 0 10px 20px rgba(0, 0, 0, 0.093); */
 }
 
 p {
@@ -400,10 +403,13 @@ p {
   text-decoration: none;
   font-size: 1.1rem;
   transition: color 0.3s;
+  padding: 8px;
+  display: flex;
 }
 
 .nav-links a:hover {
-  color: #3498db;
+  background-color: rgba(255, 255, 255, 0.078);
+  border-radius: 50px;
 }
 
 .logout-btn {
@@ -427,3 +433,55 @@ p {
   from { background: rgba(52, 152, 219, 0.2); }
   to { background: transparent; }
 }
+
+/* Feedback System */
+.feedback-form {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.rating {
+  display: flex;
+  gap: 5px;
+  margin: 10px 0;
+}
+
+.rating input[type="radio"] {
+  display: none;
+}
+
+.rating label {
+  cursor: pointer;
+  font-size: 24px;
+  color: #ddd;
+}
+
+.rating input[type="radio"]:checked ~ label {
+  color: #ffd700;
+}
+
+.rating label:hover,
+.rating label:hover ~ label {
+  color: #ffd700;
+}
+
+.feedback-item {
+  background: white;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.feedback-item .rating {
+  color: #ffd700;
+  font-size: 18px;
+}
+
+ul{
+  display: flex;
+  list-style-type: none;
+}
+
