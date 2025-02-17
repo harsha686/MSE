@@ -21,6 +21,17 @@
         form.style.display = 'none';
       }
     }
+
+    function toggleFeedbackForm(button) {
+      const feedbackForm = button.closest('.feedback-section').querySelector('.feedback-form');
+      if (feedbackForm.style.display === 'none' || feedbackForm.style.display === '') {
+        feedbackForm.style.display = 'block';
+        button.textContent = 'Cancel';
+      } else {
+        feedbackForm.style.display = 'none';
+        button.textContent = '📝 Give Feedback';
+      }
+    }
   </script>
 </head>
 <body>
@@ -42,7 +53,8 @@
               <option value="rejected" <%= applicant.status === 'rejected' ? 'selected' : '' %>>Rejected</option>
             </select>
           </form>
-
+          <ul>
+            <li>
           <!-- Details Button -->
           <button type="button" onclick="toggleProfileDetails('<%= applicant.id %>')">Details</button>
 
@@ -61,7 +73,8 @@
               <% } %>
             </div>
           </div>
-
+        </li>
+        <li>
           <!-- Schedule Interview Button and Form (Initially Hidden) -->
           <% if (applicant.status === 'shortlisted') { %>
             <button type="button" onclick="toggleInterviewForm('<%= applicant.id %>')">Schedule Interview</button>
@@ -74,7 +87,49 @@
               <button type="submit">Schedule Interview</button>
             </form>
           <% } %>
+        </li>
+        <li>
+          <!-- Feedback Section -->
+          <div class="feedback-section">
+            <button class="toggle-feedback" onclick="toggleFeedbackForm(this)">
+              📝 Give Feedback
+            </button>
+            
+            <div class="feedback-form" style="display: none;">
+              <form action="/submit-feedback" method="POST">
+                <input type="hidden" name="application_id" value="<%= applicant.id %>">
+                
+                <div class="rating">
+                  <span>Rating:</span>
+                  <% for (let i = 5; i >= 1; i--) { %>
+                    <input type="radio" id="rating-<%= i %>" name="rating" value="<%= i %>" required>
+                    <label for="rating-<%= i %>">★</label>
+                  <% } %>
+                </div>
+
+                <textarea name="comments" placeholder="Your feedback..." required></textarea>
+                <button type="submit" class="submit-btn">Submit</button>
+                <button type="button" class="cancel-btn" onclick="toggleFeedbackForm(this)">Cancel</button>
+              </form>
+            </div>
+
+            <!-- Feedback List -->
+            <div class="feedback-list">
+              <% applicant.feedbacks.forEach(feedback => { %>
+                <div class="feedback-item">
+                  <div class="rating">
+                    <% for (let i = 0; i < feedback.rating; i++) { %>★<% } %>
+                  </div>
+                  <p><%= feedback.comments %></p>
+                  <small><%= new Date(feedback.created_at).toLocaleDateString() %></small>
+                </div>
+              <% }); %>
+            </div>
+          </div>
+        </li>
+      </ul>
         </div>
+        <h4>Candidate Feedback</h4>
       <% }); %>
     </div>
   </div>
