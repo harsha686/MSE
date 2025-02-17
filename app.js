@@ -67,6 +67,16 @@ db.serialize(() => {
     resume_path TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id)
   )`);
+  // In database for feedback
+db.run(`CREATE TABLE IF NOT EXISTS feedback (
+  id INTEGER PRIMARY KEY,
+  application_id INTEGER NOT NULL,
+  comments TEXT NOT NULL,
+  rating INTEGER CHECK(rating BETWEEN 1 AND 5),
+  from_role TEXT CHECK(from_role IN ('candidate', 'recruiter')) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (application_id) REFERENCES applications(id)
+)`);
 });
 
 // Middleware to check login
@@ -161,7 +171,34 @@ app.get('/dashboard', requireLogin, (req, res) => {
               [req.session.userId],
               (err, interviews) => {
                 if (err) throw err;
-                res.render('dashboard', { applications, jobs, searchQuery, interviews, session: req.session });
+
+                // Fetch feedback for each application
+                const feedbackPromises = applications.map(application => {
+                  return new Promise((resolve, reject) => {
+                    db.all(
+                      'SELECT * FROM feedback WHERE application_id = ? AND from_role = "recruiter"',
+                      [application.id],
+                      (err, feedbacks) => {
+                        if (err) reject(err);
+                        resolve({ applicationId: application.id, feedbacks });
+                      }
+                    );
+                  });
+                });
+
+                Promise.all(feedbackPromises)
+                  .then(feedbackData => {
+                    const feedbackMap = feedbackData.reduce((acc, { applicationId, feedbacks }) => {
+                      acc[applicationId] = feedbacks;
+                      return acc;
+                    }, {});
+
+                    res.render('dashboard', { applications, jobs, searchQuery, interviews, feedbackMap, session: req.session });
+                  })
+                  .catch(err => {
+                    console.error(err);
+                    res.send('Error loading feedback');
+                  });
               }
             );
           }
@@ -238,21 +275,28 @@ app.get('/job-applicants/:jobId', requireLogin, (req, res) => {
   `, [jobId], (err, applicants) => {
     if (err) throw err;
 
-    // Fetch profiles for all applicants
-    const applicantsWithProfiles = applicants.map(applicant => {
+    // Fetch profiles and feedback for all applicants
+    const applicantsWithProfilesAndFeedback = applicants.map(applicant => {
       return new Promise((resolve, reject) => {
         db.get(
           'SELECT * FROM candidate_profiles WHERE user_id = ?',
           [applicant.candidate_id],
           (err, profile) => {
             if (err) reject(err);
-            resolve({ ...applicant, profile });
+            db.all(
+              'SELECT * FROM feedback WHERE application_id = ? AND from_role = "candidate"',
+              [applicant.id],
+              (err, feedbacks) => {
+                if (err) reject(err);
+                resolve({ ...applicant, profile, feedbacks });
+              }
+            );
           }
         );
       });
     });
 
-    Promise.all(applicantsWithProfiles)
+    Promise.all(applicantsWithProfilesAndFeedback)
       .then(data => res.render('job-applicants', { applicants: data,session: req.session }))
       .catch(err => {
         console.error(err);
@@ -362,3 +406,30 @@ app.post('/profile',
     );
   }
 );
+// Submit Feedback
+app.post('/submit-feedback', requireLogin, (req, res) => {
+  const { application_id, comments, rating } = req.body;
+  const from_role = req.session.role; // candidate or recruiter
+
+  // Validate application ownership
+  const validationQuery = req.session.role === 'candidate' ? 
+    'SELECT 1 FROM applications WHERE id = ? AND candidate_id = ?' :
+    `SELECT 1 FROM applications 
+     JOIN jobs ON applications.job_id = jobs.id 
+     WHERE applications.id = ? AND jobs.recruiter_id = ?`;
+
+  db.get(validationQuery, [application_id, req.session.userId], (err, valid) => {
+    if (err || !valid) return res.status(403).send('Unauthorized');
+
+    db.run(
+      `INSERT INTO feedback 
+      (application_id, comments, rating, from_role)
+      VALUES (?, ?, ?, ?)`,
+      [application_id, comments, rating, from_role],
+      (err) => {
+        if (err) return res.send('Error submitting feedback');
+        res.redirect('back');
+      }
+    );
+  });
+});
