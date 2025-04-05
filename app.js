@@ -150,7 +150,10 @@ app.get('/dashboard', requireLogin, (req, res) => {
   const searchQuery = req.query.q || '';
   db.serialize(() => {
     db.all(
-      'SELECT * FROM applications WHERE candidate_id = ?',
+      `SELECT applications.*, jobs.title AS job_title
+       FROM applications
+       JOIN jobs ON applications.job_id = jobs.id
+       WHERE applications.candidate_id = ?`,
       [req.session.userId],
       (err, applications) => {
         if (err) throw err;
