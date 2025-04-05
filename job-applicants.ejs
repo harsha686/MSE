@@ -42,6 +42,7 @@
     <div class="applicant-list">
       <% applicants.forEach(applicant => { %>
         <div class="applicant card">
+          <hr>
           <h3><%= applicant.candidate_name %></h3>
           <p>Status: <span class="status <%= applicant.status %>"><%= applicant.status %></span></p>
           
@@ -56,7 +57,7 @@
           <ul>
             <li>
           <!-- Details Button -->
-          <button type="button" onclick="toggleProfileDetails('<%= applicant.id %>')">Details</button>
+          <button class="details" type="button" onclick="toggleProfileDetails('<%= applicant.id %>')">Details</button>
 
           <!-- Profile Details (Initially Hidden) -->
           <div id="profile-details-<%= applicant.id %>" style="display: none;">
@@ -77,7 +78,7 @@
         <li>
           <!-- Schedule Interview Button and Form (Initially Hidden) -->
           <% if (applicant.status === 'shortlisted') { %>
-            <button type="button" onclick="toggleInterviewForm('<%= applicant.id %>')">Schedule Interview</button>
+            <button class="schedule-interview" type="button" onclick="toggleInterviewForm('<%= applicant.id %>')">Schedule Interview</button>
             <form id="interview-form-<%= applicant.id %>" action="/schedule-interview" method="POST" class="interview-form" style="display: none;">
               <input type="hidden" name="application_id" value="<%= applicant.id %>">
               <input type="date" name="interview_date" required>
@@ -129,7 +130,7 @@
         </li>
       </ul>
         </div>
-        <h4>Candidate Feedback</h4>
+        <!-- <h4>Candidate Feedback</h4> -->
       <% }); %>
     </div>
   </div>
