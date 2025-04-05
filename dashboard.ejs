@@ -8,10 +8,10 @@
       const feedbackList = button.closest('.feedback-section').querySelector('.feedback-list');
       if (feedbackList.style.display === 'none' || feedbackList.style.display === '') {
         feedbackList.style.display = 'block';
-        button.textContent = '▲ Hide Feedback';
+        button.textContent = 'Hide Feedback';
       } else {
         feedbackList.style.display = 'none';
-        button.textContent = '▼ Show Feedback';
+        button.textContent = 'Show Feedback';
       }
     }
   </script>
@@ -20,18 +20,20 @@
   <%- include('partials/navbar') %>
   <div class="dashboard">
     <div class="dashboard-header">
-      <h1>Welcome, Candidate!</h1>
+      <h1 class="welcome">Welcome, Candidate!</h1>
     </div>
 
     <!-- Search Box -->
+     
     <form class="search-form" action="/dashboard" method="GET">
-      <input 
+      <input class="search-input"
         type="text" 
         name="q" 
         placeholder="Search jobs..." 
         value="<%= searchQuery %>" <!-- Use searchQuery here -->
-      <button type="submit">Search</button>
+      <button class="search-button" type="submit">Search</button>
     </form>
+ 
 
     <!-- Available Jobs -->
     <h2 class="mt-20">Available Jobs</h2>
@@ -86,7 +88,7 @@
                   
                   <div class="rating">
                     <span>Rating:</span>
-                    <% for (let i = 5; i >= 1; i--) { %>
+                    <% for (let i = 0; i<=5; i++) { %>
                       <input type="radio" id="rating-<%= i %>" name="rating" value="<%= i %>" required>
                       <label for="rating-<%= i %>">★</label>
                     <% } %>
@@ -102,7 +104,7 @@
             <div class="feedback-section">
               <h4>Recruiter Feedback 
                 <button class="toggle-feedback" onclick="toggleFeedback(this)">
-                  <%= feedbackMap[application.id] && feedbackMap[application.id].length > 0 ? '▲ Hide' : '▼ Show' %> Feedback
+                  <%= feedbackMap[application.id] && feedbackMap[application.id].length > 0 ? 'Hide' : 'Show' %> Feedback
                 </button>
               </h4>
               
